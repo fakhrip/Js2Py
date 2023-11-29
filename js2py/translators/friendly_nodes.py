@@ -28,9 +28,13 @@ def inject_before_lval(source, lval, code):
         raise RuntimeError('To many lvals (%s)' % lval)
     elif not source.count(lval):
         print()
+        print("================")
+        print(code)
         print(lval)
+        print("+++++++")
         assert lval not in source
         raise RuntimeError('No lval found "%s"' % lval)
+    
     end = source.index(lval)
     inj = source.rfind('\n', 0, end)
     ind = inj

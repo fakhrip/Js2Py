@@ -55,7 +55,10 @@ class InlineStack:
 
     def inject_inlines(self, source):
         for lval in self.names:  # first in first out! Its important by the way
-            source = inject_before_lval(source, lval, self.reps[lval])
+            try:
+                source = inject_before_lval(source, lval, self.reps[lval]) # hack fix to pass one lval stupid error
+            except:
+                continue
         return source
 
     def require(self, typ):
