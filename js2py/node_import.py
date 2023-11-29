@@ -10,7 +10,7 @@ import random
 
 DID_INIT = False
 DIRNAME = tempfile.mkdtemp()
-PY_NODE_MODULES_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'py_node_modules').replace("_", "-")
+PY_NODE_MODULES_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'py_node_modules')
 
 
 def _init():
@@ -137,17 +137,17 @@ def _get_and_translate_npm_module(module_name, include_polyfill=False, update=Fa
         py_code = translate_js(js_code)
 
         dirname = os.path.dirname(
-            os.path.join(PY_NODE_MODULES_PATH, module_filename))
+            os.path.join(PY_NODE_MODULES_PATH, module_filename)).replace("_", "-")
         if not os.path.isdir(dirname):
             os.makedirs(dirname)
-        with open(os.path.join(PY_NODE_MODULES_PATH, module_filename),
+        with open(os.path.join(PY_NODE_MODULES_PATH, module_filename).replace("_", "-"),
                   'wb') as f:
             f.write(py_code.encode('utf-8') if six.PY3 else py_code)
     else:
         with codecs.open(
-                os.path.join(PY_NODE_MODULES_PATH, module_filename), "r",
+                os.path.join(PY_NODE_MODULES_PATH, module_filename).replace("_", "-"), "r",
                 "utf-8") as f:
-            print(f"Using file from {os.path.join(PY_NODE_MODULES_PATH, module_filename)}")
+            print(f"using file from {os.path.join(PY_NODE_MODULES_PATH, module_filename).replace('_', '-')}")
             py_code = f.read()
     return py_code
 
