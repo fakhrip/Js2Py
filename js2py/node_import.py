@@ -73,7 +73,7 @@ def _get_and_translate_npm_module(module_name, include_polyfill=False, update=Fa
     module_filename = '%s.py' % py_name
     var_name = _get_module_var_name(module_name).replace(".", "")
     if not os.path.exists(os.path.join(PY_NODE_MODULES_PATH,
-                                       module_filename)) or update:
+                                       module_filename).replace("_", "-")) or update:
         _init()
         module_hash = hashlib.sha1(module_name.encode("utf-8")).hexdigest()[:15]
         version = random.randrange(10000000000000)
