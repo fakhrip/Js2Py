@@ -81,7 +81,7 @@ def _get_and_translate_npm_module(module_name, include_polyfill=False, update=Fa
         out_file_name = 'out_%s_%d.js' % (module_hash, version)
         code = ADD_TO_GLOBALS_FUNC
         if include_polyfill:
-            code += "\n;require('babel-polyfill');\n"
+            code += "\n;require('@babel/polyfill');\n"
         code += """
         var module_temp_love_python = require(%s);
         addToGlobals(%s, module_temp_love_python);
@@ -152,7 +152,7 @@ def _get_and_translate_npm_module(module_name, include_polyfill=False, update=Fa
     return py_code
 
 
-def require(module_name, include_polyfill=False, update=False, context=None):
+def require(module_name, include_polyfill=True, update=False, context=None):
     """
     Installs the provided npm module, exports a js bundle via browserify, converts to ECMA 5.1 via babel and
     finally translates the generated JS bundle to Python via Js2Py.
@@ -181,4 +181,4 @@ def require(module_name, include_polyfill=False, update=False, context=None):
         py_code = py_code[len(DEFAULT_HEADER):]
     context = {} if context is None else context
     exec(py_code, context)
-    return context['var'][_get_module_var_name(module_name)].to_py()
+    return context['var'][_get_module_var_name(module_name).replace(".", "")].to_py()
