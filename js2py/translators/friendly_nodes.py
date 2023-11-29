@@ -24,14 +24,11 @@ def indent(lines, ind=4):
 def inject_before_lval(source, lval, code):
     if source.count(lval) > 1:
         print()
-        print(lval)
+        print("Too many lval for", lval)
         raise RuntimeError('To many lvals (%s)' % lval)
     elif not source.count(lval):
         print()
-        print("================")
-        print(code)
-        print(lval)
-        print("+++++++")
+        print("Cant find any lval for", lval)
         assert lval not in source
         raise RuntimeError('No lval found "%s"' % lval)
     
