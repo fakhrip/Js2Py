@@ -10,7 +10,7 @@ import random
 
 DID_INIT = False
 DIRNAME = tempfile.mkdtemp()
-PY_NODE_MODULES_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'py_node_modules')
+PY_NODE_MODULES_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'py_node_modules').replace("_", "-")
 
 
 def _init():
@@ -21,7 +21,7 @@ def _init():
         'node -v', shell=True, cwd=DIRNAME
     ) == 0, 'You must have node installed! run: brew install node'
     assert subprocess.call(
-        'cd %s;npm install @babel/core @babel/cli @babel/preset-env babel-polyfill babelify browserify browserify-shim'
+        'cd %s;npm install @babel/core @babel/cli @babel/preset-env @babel/polyfill babelify browserify browserify-shim'
         % repr(DIRNAME),
         shell=True,
         cwd=DIRNAME) == 0, 'Could not link required node_modules'
@@ -71,7 +71,7 @@ def _get_and_translate_npm_module(module_name, include_polyfill=False, update=Fa
 
     py_name = _get_module_py_name(module_name)
     module_filename = '%s.py' % py_name
-    var_name = _get_module_var_name(module_name).replace(".", "") # hack fix for when module name include .
+    var_name = _get_module_var_name(module_name).replace(".", "")
     if not os.path.exists(os.path.join(PY_NODE_MODULES_PATH,
                                        module_filename)) or update:
         _init()
@@ -101,7 +101,23 @@ def _get_and_translate_npm_module(module_name, include_polyfill=False, update=Fa
 
         # convert the module
         assert subprocess.call(
-            '''node -e "(require('browserify')('./%s').bundle(function (err,data) {if (err) {console.log(err);throw new Error(err);};fs.writeFile('%s', require('@babel/core').transform(data, {'presets': [require('@babel/preset-env')]}).code, ()=>{});}))"'''
+            '''node -e "(
+                require('browserify')('./%s').bundle(
+                    function (err,data) {
+                        if (err) {
+                            console.log(err);
+                            throw new Error(err);
+                        };
+                        fs.writeFileSync('%s', 
+                            require('@babel/core').transformSync(data, {
+                                'presets': [
+                                    '@babel/preset-env'
+                                ],
+                            }).code, 
+                        );
+                    }
+                )
+            )"'''
             % (in_file_name, out_file_name),
             shell=True,
             cwd=DIRNAME,
@@ -131,11 +147,12 @@ def _get_and_translate_npm_module(module_name, include_polyfill=False, update=Fa
         with codecs.open(
                 os.path.join(PY_NODE_MODULES_PATH, module_filename), "r",
                 "utf-8") as f:
+            print(f"Using file from {os.path.join(PY_NODE_MODULES_PATH, module_filename)}")
             py_code = f.read()
     return py_code
 
 
-def require(module_name, include_polyfill=True, update=False, context=None):
+def require(module_name, include_polyfill=False, update=False, context=None):
     """
     Installs the provided npm module, exports a js bundle via browserify, converts to ECMA 5.1 via babel and
     finally translates the generated JS bundle to Python via Js2Py.
