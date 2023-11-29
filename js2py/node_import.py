@@ -101,7 +101,7 @@ def _get_and_translate_npm_module(module_name, include_polyfill=False, update=Fa
 
         # convert the module
         assert subprocess.call(
-            '''node -e "(require('browserify')('./%s').bundle(function (err,data) {if (err) {console.log(err);throw new Error(err);};fs.writeFile('%s', require('@babel/core').transform(data, {'presets': require('@babel/preset-env')}).code, ()=>{});}))"'''
+            '''node -e "(require('browserify')('./%s').bundle(function (err,data) {if (err) {console.log(err);throw new Error(err);};fs.writeFile('%s', require('@babel/core').transform(data, {'presets': [require('@babel/preset-env')]}).code, ()=>{});}))"'''
             % (in_file_name, out_file_name),
             shell=True,
             cwd=DIRNAME,
