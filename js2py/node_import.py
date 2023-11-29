@@ -21,7 +21,7 @@ def _init():
         'node -v', shell=True, cwd=DIRNAME
     ) == 0, 'You must have node installed! run: brew install node'
     assert subprocess.call(
-        'cd %s;npm install babel-core babel-cli babel-preset-es2015 babel-polyfill babelify browserify browserify-shim'
+        'cd %s;npm install @babel/core @babel/cli @babel/preset-env babel-polyfill babelify browserify browserify-shim'
         % repr(DIRNAME),
         shell=True,
         cwd=DIRNAME) == 0, 'Could not link required node_modules'
@@ -101,7 +101,7 @@ def _get_and_translate_npm_module(module_name, include_polyfill=False, update=Fa
 
         # convert the module
         assert subprocess.call(
-            '''node -e "(require('browserify')('./%s').bundle(function (err,data) {if (err) {console.log(err);throw new Error(err);};fs.writeFile('%s', require('babel-core').transform(data, {'presets': require('babel-preset-es2015')}).code, ()=>{});}))"'''
+            '''node -e "(require('browserify')('./%s').bundle(function (err,data) {if (err) {console.log(err);throw new Error(err);};fs.writeFile('%s', require('@babel/core').transform(data, {'presets': require('@babel/preset-env')}).code, ()=>{});}))"'''
             % (in_file_name, out_file_name),
             shell=True,
             cwd=DIRNAME,
