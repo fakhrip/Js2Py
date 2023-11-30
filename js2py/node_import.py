@@ -21,7 +21,7 @@ def _init():
         'node -v', shell=True, cwd=DIRNAME
     ) == 0, 'You must have node installed! run: brew install node'
     assert subprocess.call(
-        'cd %s;npm install @babel/core @babel/cli @babel/preset-env @babel/polyfill babelify browserify browserify-shim'
+        'cd %s;npm install @babel/core @babel/cli @babel/preset-env core-js@3.33.3 babelify browserify browserify-shim'
         % repr(DIRNAME),
         shell=True,
         cwd=DIRNAME) == 0, 'Could not link required node_modules'
@@ -81,7 +81,8 @@ def _get_and_translate_npm_module(module_name, include_polyfill=False, update=Fa
         out_file_name = 'out_%s_%d.js' % (module_hash, version)
         code = ADD_TO_GLOBALS_FUNC
         if include_polyfill:
-            code += "\n;require('@babel/polyfill');\n"
+            code += "\n;require('core-js');\n"
+            code += "\n;require('atob');\n"
         code += """
         var module_temp_love_python = require(%s);
         addToGlobals(%s, module_temp_love_python);
@@ -111,7 +112,13 @@ def _get_and_translate_npm_module(module_name, include_polyfill=False, update=Fa
                         fs.writeFileSync('%s', 
                             require('@babel/core').transformSync(data, {
                                 'presets': [
-                                    '@babel/preset-env'
+                                    [
+                                        '@babel/preset-env',
+                                        {
+                                            useBuiltIns: "usage",
+                                            corejs: "3.33"
+                                        }
+                                    ]
                                 ],
                             }).code, 
                         );
