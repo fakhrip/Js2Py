@@ -14,14 +14,15 @@ PY_NODE_MODULES_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 
 
 
 def _init():
-    global DID_INIT
+    global DID_INIT, DIRNAME
+
     if DID_INIT:
         return
     assert subprocess.call(
         'node -v', shell=True, cwd=DIRNAME
     ) == 0, 'You must have node installed! run: brew install node'
     assert subprocess.call(
-        'cd %s;npm install @babel/core @babel/cli @babel/preset-env core-js@3.33.3 babelify browserify browserify-shim'
+        'cd %s;npm install @babel/core @babel/cli @babel/preset-env core-js@3.33.3 regenerator-runtime atob webpack babel-loader'
         % repr(DIRNAME),
         shell=True,
         cwd=DIRNAME) == 0, 'Could not link required node_modules'
@@ -67,6 +68,7 @@ def _get_module_var_name(module_name):
 
 
 def _get_and_translate_npm_module(module_name, include_polyfill=False, update=False, maybe_version_str=""):
+    global DIRNAME
     assert isinstance(module_name, str), 'module_name must be a string!'
 
     py_name = _get_module_py_name(module_name)
@@ -81,7 +83,8 @@ def _get_and_translate_npm_module(module_name, include_polyfill=False, update=Fa
         out_file_name = 'out_%s_%d.js' % (module_hash, version)
         code = ADD_TO_GLOBALS_FUNC
         if include_polyfill:
-            code += "\n;require('core-js');\n"
+            code += "\n;require('core-js/stable');\n"
+            code += "\n;require('regenerator-runtime/runtime');\n"
             code += "\n;require('atob');\n"
         code += """
         var module_temp_love_python = require(%s);
@@ -103,27 +106,49 @@ def _get_and_translate_npm_module(module_name, include_polyfill=False, update=Fa
         # convert the module
         assert subprocess.call(
             '''node -e "(
-                require('browserify')('./%s').bundle(
-                    function (err,data) {
-                        if (err) {
-                            console.log(err);
-                            throw new Error(err);
-                        };
-                        fs.writeFileSync('%s', 
-                            require('@babel/core').transformSync(data, {
-                                'presets': [
-                                    [
-                                        '@babel/preset-env',
-                                        {
-                                            useBuiltIns: "usage",
-                                            corejs: "3.33"
-                                        }
-                                    ]
+                require('webpack')({
+                    entry: './%s', 
+                    target: ['web', 'es5'],
+                    output: { 
+                        filename: '%s',
+                    } ,
+                    optimization: {
+                        minimize: false, // do not let webpack get in trouble with the stupid (non-optimizing) compiler XD
+                    },
+                    module: {
+                        rules: [
+                            {
+                                test: /\.(?:js|mjs|cjs)$/,
+                                exclude: [
+                                    /node_modules[\\/]core-js/,
+                                    /node_modules[\\/]webpack[\\/]buildin/,
+                                    /node_modules[\\/]regenerator-runtime/
                                 ],
-                            }).code, 
-                        );
+                                use: {
+                                    loader: 'babel-loader',
+                                    options: {
+                                        presets: [
+                                            [
+                                                '@babel/preset-env', 
+                                                {
+                                                    useBuiltIns: 'entry', 
+                                                    corejs: '3.33'
+                                                }
+                                            ]
+                                        ],
+                                    }
+                                }
+                            }
+                        ]
                     }
-                )
+                }, (err, stats) => {
+                    if (err) {
+                        console.error(err);
+                        return;
+                    }
+
+                    console.log('bundling complete ...')
+                }) 
             )"'''
             % (in_file_name, out_file_name),
             shell=True,
@@ -131,15 +156,19 @@ def _get_and_translate_npm_module(module_name, include_polyfill=False, update=Fa
         ) == 0, 'Error when converting module to the js bundle'
 
         os.remove(os.path.join(DIRNAME, in_file_name))
+
+        DIRNAME = DIRNAME + '/dist/'
         with codecs.open(os.path.join(DIRNAME, out_file_name), "r",
                          "utf-8") as f:
             js_code = f.read()
+
         print("Bundled JS library dumped at: %s" % os.path.join(DIRNAME, out_file_name))
         if len(js_code) < 50:
             raise RuntimeError("Candidate JS bundle too short - likely browserify issue.")
         js_code += GET_FROM_GLOBALS_FUNC
         js_code += ';var %s = getFromGlobals(%s);%s' % (
             var_name, repr(module_name), var_name)
+
         print('Please wait, translating...')
         py_code = translate_js(js_code)
 
