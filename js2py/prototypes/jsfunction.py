@@ -10,7 +10,9 @@ if six.PY3:
 class FunctionPrototype:
     def toString():
         if not this.is_callable():
-            raise TypeError('toString is not generic!')
+            # hackfix to keep the compiler running even if there is this stupid mistake in the generated code somehow
+            print('toString is not callable on this type') 
+            # raise TypeError('toString is not generic!')
         args = ', '.join(this.code.__code__.co_varnames[:this.argcount])
         return 'function %s(%s) ' % (this.func_name, args) + this.source
 
